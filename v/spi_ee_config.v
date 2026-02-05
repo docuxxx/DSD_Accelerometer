@@ -2,7 +2,7 @@
 초기 설정 단계에서 activity/inactivity, free-fall, 데이터 레이트 및 인터럽트 매핑을 구성한다. 
 초기화 이후에는 INT2 인터럽트를 기반으로 상태 레지스터를 확인하고, 데이터 준비 시 X축 가속도 데이터를 16비트로 분할 읽기하여 출력한다. 
 Activity는 DC-coupled 방식으로 절대 가속도를 기준으로 판단하고, 
-Inactivity는 AC-coupled 방식으로 기준 대비 변화량을 비교함으로써 중력 및 설치 자세 변화 동작 검출을 수행한다. */
+Inactivity는 AC-coupled 방식으로 기준 대비 변화량을 비교함으로써 중력 및 설치 자세 변화 동작 검출을 수행. */
 module spi_ee_config (			
 								iRSTN,															
 								iSPI_CLK,								
@@ -132,7 +132,7 @@ always@(posedge iSPI_CLK or negedge iRSTN)
 					// 상위 바이트 읽을 차례 (상위 바이트 먼저 읽음)
 					if (high_byte) // multiple-byte read
 				  begin
-						// 읽기 모드로 X축 상위 바이트 읽기
+						// 읽기 모드로 X축 하위 바이트 읽기
 					  p2s_data[15:8] <= {READ_MODE, X_HB};						
 					  read_back      <= 1'b1;
 					end

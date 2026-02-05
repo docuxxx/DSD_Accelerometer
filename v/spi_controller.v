@@ -48,6 +48,7 @@ reg  	[3:0]		spi_count;
 //=======================================================
 //  Structural coding
 //=======================================================
+
 // 보낼 데이터가 1이면 읽기 모드, 0이면 쓰기 모드
 assign read_mode = iP2S_DATA[SI_DataL];
 // 15에서 0까지 감소하는 카운터이므로 MSB가 1이면 주소 쓰기
@@ -58,7 +59,7 @@ assign oSPI_END = ~|spi_count;
 assign oSPI_CSN = ~iSPI_GO;
 // SPI 클럭은 카운터가 동작 중일 때만 출력, 아니면 High 상태 유지
 assign oSPI_CLK = spi_count_en ? iSPI_CLK_OUT : 1'b1;
-// SPI 데이터 라인은 쓰기 모드이거나 주소 쓰기 모드일 때만 입력, 아니면 High-Z
+// SPI 데이터 라인은 쓰기 모드이거나 주소 쓰기 모드일 때만 입력, 아니면 High-Z (tri-state bus)
 assign SPI_SDIO = spi_count_en && (!read_mode || write_address) ? iP2S_DATA[spi_count] : 1'bz;
 
 always @ (posedge iSPI_CLK or negedge iRSTN) 
