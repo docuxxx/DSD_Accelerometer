@@ -1,0 +1,106 @@
+module VGA_controller(
+    input CLOCK_25,
+    input iRSTn,
+    input [9:0] col,
+    input [8:0] row,
+    input [3:0] iDATA_10,
+    input [3:0] iDATA_1,
+	 input [3:0] Color_R,Color_G,Color_B,
+    output [3:0] Red, Green, Blue
+);
+
+    // ==========================================
+    // Internal Wires & Registers
+    // ==========================================
+    wire [13:0] addr;
+    wire rden;
+    wire [9:0] q;
+    wire Section_10, Section_01;
+    wire graphic;
+//    wire [3:0] Color_R,Color_G,Color_B;
+    
+    // 로직 분리를 위한 내부 신호
+    wire [3:0] target_num;  // 현재 그려야 할 숫자 (0~9)
+    reg current_q_bit;      // 선택된 숫자에 해당하는 ROM 데이터 비트
+
+    // ==========================================
+    // Parameters (좌표 설정)
+    // ==========================================
+    parameter col_10 = 300, row_10 = 100; // 10의 자리 시작 좌표
+    parameter col_01 = 400, row_01 = 100; // 1의 자리 시작 좌표
+
+    // ==========================================
+    // 1. Section Logic (영역 판별)
+    // ==========================================
+    // 10의 자리 구간: 가로 70, 세로 140
+    assign Section_10 = ((col >= col_10) && (col <= col_10 + 69) && 
+                         (row >= row_10) && (row <= row_10 + 139)) ? 1'b1 : 1'b0;
+
+    // 1의 자리 구간: 가로 70, 세로 140
+    assign Section_01 = ((col >= col_01) && (col <= col_01 + 69) && 
+                         (row >= row_01) && (row <= row_01 + 139)) ? 1'b1 : 1'b0;
+
+    // ==========================================
+    // 2. Graphic Logic (숫자 비트 매핑)
+    // ==========================================
+    
+    // 1. 현재 위치에 따라 표시해야 할 숫자 결정 (영역 밖이면 15)
+    assign target_num = (Section_10) ? iDATA_10 :
+                        (Section_01) ? iDATA_1 : 4'd15;
+
+    // 2. 숫자에 맞춰 ROM 데이터(q)의 특정 비트 선택
+    // (숫자 0 -> q[9], 숫자 1 -> q[8] ... 역순 매핑)
+    always @(*) begin
+        case(target_num)
+            4'd0: current_q_bit = q[9];
+            4'd1: current_q_bit = q[8];
+            4'd2: current_q_bit = q[7];
+            4'd3: current_q_bit = q[6];
+            4'd4: current_q_bit = q[5];
+            4'd5: current_q_bit = q[4];
+            4'd6: current_q_bit = q[3];
+            4'd7: current_q_bit = q[2];
+            4'd8: current_q_bit = q[1];
+            4'd9: current_q_bit = q[0];
+            default: current_q_bit = 1'b0;
+        endcase
+    end
+
+    // 3. 최종 그래픽 신호 생성 (구간 내 존재 && 비트가 1일 때)
+    assign graphic = ((Section_10 || Section_01) && current_q_bit) ? 1'b1 : 1'b0;
+	//ROM에 저장된 비트가 1일때만 색적용
+    // ==========================================
+    // 3. Color Output Logic
+    // ==========================================	 
+	 assign Red 	= (graphic == 1'b1) ? Color_R : 4'b0000;
+	 assign Green 	= (graphic == 1'b1) ? Color_G : 4'b0000;
+	 assign Blue 	= (graphic == 1'b1) ? Color_B : 4'b0000;
+
+    // ==========================================
+    // 4. Submodule Instantiation
+    // ==========================================
+    
+    // Memory Controller 인스턴스
+    memory_controller #(
+        .col_10(col_10), 
+        .row_10(row_10), 
+        .col_01(col_01), 
+        .row_01(row_01)
+    ) Memory_controller (
+        .iCLK(CLOCK_25), 
+        .iRSTn(iRSTn), 
+        .col(col), 
+        .row(row), 
+        .rden(rden), 
+        .addr(addr)
+    );
+
+    // ROM 인스턴스
+    ROM ROM9 (
+        .address(addr), 
+        .clock(CLOCK_25), 
+        .rden(rden), 
+        .q(q)
+    );
+
+endmodule
