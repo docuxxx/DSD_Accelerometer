@@ -1,0 +1,53 @@
+module VGA(
+    input CLOCK_50,iRSTn,CLOCK_25,
+//    input [9:0] SW,          // 스위치 전체 입력
+//    input [1:0] KEY,
+	 input [7:0] iDATA,
+	 input [3:0] Color_R,Color_G,Color_B,
+    output [3:0] VGA_R, VGA_G, VGA_B,
+    output H_SYNC,V_SYNC
+);
+
+
+wire [9:0] col;
+wire [8:0] row;
+wire [3:0] Red, Green, Blue;
+//wire CLOCK_25;
+wire h_sync, v_sync;
+
+parameter col_10 = 300, row_10 = 100; //10의 자리 숫자 좌표z
+parameter col_01 = 400, row_01 = 100; //1의 자리 숫자 좌표
+
+//PLL
+//PLL(.inclk0(CLOCK_50), .c0(CLOCK_25));
+
+sync_generator 
+Sync_Generator(.CLOCK_25(CLOCK_25), .iRSTn(iRSTn), .h_sync_signal(h_sync), .v_sync_signal(v_sync), 
+					.col(col), .row(row));
+
+D_FF_enable_VGA
+D_FF_H_SYNC(.iCLK(CLOCK_25), .iEN(1'b1), .iDATA(h_sync), .oDATA(H_SYNC), .iRSTn(iRSTn));
+
+D_FF_enable_VGA
+D_FF_V_SYNC(.iCLK(CLOCK_25), .iEN(1'b1), .iDATA(v_sync), .oDATA(V_SYNC), .iRSTn(iRSTn));
+
+VGA_controller 
+#(.col_10(col_10), .row_10(row_10), .col_01(col_01), .row_01(row_01)) 
+VGA_controller1(.CLOCK_25(CLOCK_25), .iRSTn(iRSTn), 
+					 .Color_R(Color_R), .Color_G(Color_G), .Color_B(Color_B),
+					 .col(col), .row(row), .iDATA_10(iDATA[7:4]), .iDATA_1(iDATA[3:0]), 
+					 .Red(Red), .Green(Green), .Blue(Blue));
+
+D_REG
+#(.n(4))
+D_REG_Red(.iRSTn(iRSTn), .iCLK(CLOCK_25), .iEN(1'b1), .iDATA(Red), .oDATA(VGA_R)); 
+ 
+D_REG
+#(.n(4))
+D_REG_Green(.iRSTn(iRSTn), .iCLK(CLOCK_25), .iEN(1'b1), .iDATA(Green), .oDATA(VGA_G)); 
+ 
+D_REG
+#(.n(4))
+D_REG_Blue(.iRSTn(iRSTn), .iCLK(CLOCK_25), .iEN(1'b1), .iDATA(Blue), .oDATA(VGA_B)); 
+
+endmodule
